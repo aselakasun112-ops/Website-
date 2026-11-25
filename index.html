@@ -1,0 +1,642 @@
+```html
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexora - Stream Movies</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        nexora: {
+                            dark: '#0a0a0d',
+                            card: '#141419',
+                            accent: '#e11d48',
+                            accentHover: '#be123c'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-nexora-dark text-white font-sans antialiased min-h-screen flex flex-col selection:bg-nexora-accent selection:text-white">
+
+    <!-- Navigation Bar -->
+    <nav class="sticky top-0 z-40 w-full backdrop-blur-md bg-nexora-dark/90 border-b border-white/10">
+        <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between gap-2 h-16 sm:h-20">
+                <!-- Brand Logo -->
+                <div class="flex items-center gap-2 sm:gap-3 cursor-pointer shrink-0" onclick="showHome()">
+                    <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-tr from-nexora-accent to-orange-500 flex items-center justify-center shadow-lg shadow-nexora-accent/30">
+                        <i class="fa-solid fa-play text-white text-xs sm:text-sm ml-0.5"></i>
+                    </div>
+                    <span class="text-lg sm:text-2xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
+                        NEXORA
+                    </span>
+                </div>
+
+                <!-- Search & Home Button (Always Visible on Mobile & Desktop) -->
+                <div class="flex items-center gap-2 sm:gap-3 flex-grow justify-end max-w-md">
+                    <div class="relative flex-grow max-w-[200px] sm:max-w-xs">
+                        <input type="text" id="searchInput" placeholder="Search films..." 
+                            class="w-full bg-white/10 border border-white/15 rounded-full py-1.5 sm:py-2 pl-8 sm:pl-10 pr-3 sm:pr-4 text-xs sm:text-sm text-white placeholder-gray-400 focus:outline-none focus:border-nexora-accent focus:ring-1 focus:ring-nexora-accent transition-all">
+                        <i class="fa-solid fa-magnifying-glass absolute left-2.5 sm:left-3.5 top-2 sm:top-2.5 text-gray-400 text-xs sm:text-sm"></i>
+                    </div>
+                    <button onclick="showHome()" id="navHomeBtn" class="hidden px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-lg bg-white/10 hover:bg-white/20 text-xs font-semibold text-white transition-colors shrink-0">
+                        <i class="fa-solid fa-house"></i><span class="hidden sm:inline ml-1">Home</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow">
+        <!-- Cinesubz-Style Dedicated Movie Watch View -->
+        <section id="watchSection" class="hidden max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-10 border-b border-white/10">
+            <!-- Breadcrumb Navigation -->
+            <nav class="flex flex-wrap items-center gap-1.5 text-xs sm:text-sm text-gray-400 mb-2">
+                <button onclick="showHome()" class="hover:text-white transition-colors">Home</button>
+                <span>/</span>
+                <button onclick="showHome()" class="hover:text-white transition-colors">Movies</button>
+                <span>/</span>
+            </nav>
+
+            <!-- Movie Title with Sinhala Subtitle Tag -->
+            <h1 id="watchTitle" class="text-xl sm:text-3xl font-bold text-white leading-snug mb-5">
+                Loading...
+            </h1>
+
+            <!-- Embedded 16:9 Video Player Box -->
+            <div id="playerWrapper" class="relative w-full aspect-video bg-black rounded-xl overflow-hidden border border-white/10 shadow-2xl">
+                <div id="iframeScaler" class="w-full h-full flex items-center justify-center origin-top-left">
+                    <iframe id="videoFrame" class="w-full h-full border-0 bg-black" 
+                        allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media" allowfullscreen webkitallowfullscreen mozallowfullscreen>
+                    </iframe>
+                </div>
+            </div>
+
+            <!-- Action Icons Row (Download, Fullscreen, Info/Details, Divider, Reload) -->
+            <div class="flex items-center justify-between gap-3 py-4">
+                <div class="flex items-center gap-2.5 shrink-0">
+                    <!-- Download Icon Button -->
+                    <button id="watchDownloadIcon" type="button" onclick="triggerDownload()" title="Download Movie"
+                       class="w-10 h-10 rounded-full border border-white/25 bg-nexora-card hover:bg-nexora-accent hover:border-nexora-accent text-white flex items-center justify-center transition-all">
+                        <i class="fa-solid fa-download text-sm"></i>
+                    </button>
+                    <!-- Fullscreen Expand Icon Button -->
+                    <button onclick="toggleFullScreen()" title="Full Screen"
+                       class="w-10 h-10 rounded-full border border-white/25 bg-nexora-card hover:bg-white/15 text-white flex items-center justify-center transition-all">
+                        <i class="fa-solid fa-up-right-and-down-left-from-center text-sm"></i>
+                    </button>
+                    <!-- Movie Info Toggle Button -->
+                    <button onclick="toggleMovieInfo()" title="Movie Details"
+                       class="w-10 h-10 rounded-full border border-white/25 bg-nexora-card hover:bg-white/15 text-white flex items-center justify-center transition-all">
+                        <i class="fa-solid fa-comment-dots text-sm"></i>
+                    </button>
+                </div>
+
+                <!-- Horizontal Divider Line -->
+                <div class="h-[1px] bg-white/15 flex-grow mx-2"></div>
+
+                <!-- Reload Stream Button -->
+                <button onclick="reloadStream()" title="Reload Player"
+                   class="w-10 h-10 rounded-full border border-white/25 bg-nexora-card hover:bg-yellow-500/20 hover:border-yellow-500 text-white flex items-center justify-center transition-all shrink-0">
+                    <i class="fa-solid fa-triangle-exclamation text-sm"></i>
+                </button>
+            </div>
+
+            <!-- Collapsible Movie Details Box -->
+            <div id="watchDetailsBox" class="hidden mb-4 p-4 rounded-xl bg-nexora-card border border-white/10 text-sm text-gray-300 flex flex-wrap items-center justify-between gap-4">
+                <div class="flex items-center gap-3 sm:gap-4">
+                    <span class="flex items-center gap-1.5 text-yellow-400 font-bold"><i class="fa-solid fa-star"></i> <span id="watchRating">-</span></span>
+                    <span>•</span>
+                    <span id="watchYear">-</span>
+                    <span>•</span>
+                    <span id="watchGenre">-</span>
+                    <span>•</span>
+                    <span id="watchDuration">-</span>
+                </div>
+                <span class="text-xs text-emerald-400 font-medium"><i class="fa-solid fa-closed-captioning mr-1"></i> Sinhala Subtitles Included</span>
+            </div>
+
+            <!-- Server Selection Stack -->
+            <div class="space-y-2.5 mt-1">
+                <button id="serverBtn1" onclick="selectServer(1)" class="w-full py-3.5 px-5 rounded-lg bg-nexora-accent hover:bg-nexora-accentHover text-white font-medium text-sm sm:text-base flex items-center gap-4 transition-all shadow-lg">
+                    <i class="fa-solid fa-play text-xs"></i>
+                    <span id="serverBtn1Label"><span class="text-white/75 font-normal mr-1.5">Server</span> <strong class="font-bold">Nexora Player (HD)</strong></span>
+                </button>
+
+                <button id="serverBtn2" type="button" onclick="triggerDownload()" class="w-full py-3.5 px-5 rounded-lg bg-[#1c1c21] hover:bg-[#27272e] border border-white/5 text-white font-medium text-sm sm:text-base flex items-center gap-4 transition-all text-left">
+                    <i class="fa-solid fa-download text-xs text-gray-400"></i>
+                    <span><span class="text-gray-400 font-normal mr-1.5">Server</span> <strong class="font-bold">Direct Download (Google Drive)</strong></span>
+                </button>
+            </div>
+        </section>
+
+        <!-- Featured Hero Banner (Home View) -->
+        <section id="heroSection" class="relative w-full h-[65vh] sm:h-[75vh] overflow-hidden flex items-end">
+            <!-- Hero Backdrop Image -->
+            <img id="heroBackdrop" src="" alt="Featured Movie" 
+                onerror="this.src='https://placehold.co/1920x1080/141419/ffffff?text=NEXORA+CINEMA'"
+                class="absolute inset-0 w-full h-full object-cover object-center scale-105 filter brightness-75 transition-all duration-700">
+            
+            <!-- Gradient Overlays -->
+            <div class="absolute inset-0 bg-gradient-to-t from-nexora-dark via-nexora-dark/60 to-transparent"></div>
+            <div class="absolute inset-0 bg-gradient-to-r from-nexora-dark via-nexora-dark/40 to-transparent"></div>
+
+            <!-- Hero Content -->
+            <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 sm:pb-16 w-full">
+                <div class="max-w-2xl space-y-4">
+                    <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+                        <span class="px-2.5 py-1 text-xs font-bold uppercase tracking-wider bg-nexora-accent text-white rounded-md">
+                            Featured
+                        </span>
+                        <span id="heroGenre" class="px-3 py-1 text-xs font-medium bg-white/10 backdrop-blur-md text-gray-200 rounded-md border border-white/10">
+                            Action
+                        </span>
+                        <span id="heroYear" class="text-sm text-gray-300 font-medium">2012</span>
+                        <span id="heroDuration" class="text-sm text-gray-300 font-medium hidden">• 1h 58m</span>
+                        <div class="flex items-center gap-1 text-yellow-400 text-sm font-semibold">
+                            <i class="fa-solid fa-star"></i>
+                            <span id="heroRating">6.5</span>
+                        </div>
+                    </div>
+
+                    <h1 id="heroTitle" class="text-4xl sm:text-6xl font-extrabold tracking-tight capitalize text-white drop-shadow-md">
+                        Players
+                    </h1>
+
+                    <p id="heroDesc" class="text-gray-300 text-sm sm:text-base line-clamp-2 max-w-xl">
+                        Stream Players (2012) in high definition exclusively on Nexora.
+                    </p>
+
+                    <div class="pt-3 flex flex-wrap items-center gap-3 sm:gap-4">
+                        <button id="heroPlayBtn" 
+                            class="px-7 py-3.5 rounded-xl bg-nexora-accent hover:bg-nexora-accentHover text-white font-semibold flex items-center gap-3 shadow-lg shadow-nexora-accent/30 transition-all transform hover:scale-105 active:scale-95">
+                            <i class="fa-solid fa-play"></i>
+                            <span>Watch Now</span>
+                        </button>
+                        <button id="heroDownloadBtn" type="button"
+                            class="px-6 py-3.5 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/15 text-white font-semibold flex items-center gap-2.5 transition-all transform hover:scale-105 active:scale-95">
+                            <i class="fa-solid fa-download"></i>
+                            <span>Download</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Movies Grid Section -->
+        <section class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-8 sm:py-12">
+            <div class="flex items-center justify-between mb-5 sm:mb-8">
+                <div class="flex items-center gap-2.5 sm:gap-3">
+                    <div class="w-1.5 h-6 sm:h-7 bg-nexora-accent rounded-full"></div>
+                    <h2 id="gridSectionTitle" class="text-lg sm:text-2xl font-bold tracking-tight">Available Movies</h2>
+                </div>
+                <span id="movieCount" class="text-xs sm:text-sm text-gray-400">2 Movies</span>
+            </div>
+
+            <!-- Movie Cards Container (3 Columns per Row on Mobile & Tablet, 4 on Large Desktop) -->
+            <div id="moviesGrid" class="grid grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-5">
+                <!-- Cards injected via JavaScript -->
+            </div>
+
+            <!-- Empty Search State -->
+            <div id="noResults" class="hidden text-center py-16">
+                <i class="fa-solid fa-film text-4xl text-gray-600 mb-3"></i>
+                <p class="text-gray-400 text-lg">No movies found matching your search.</p>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-white/10 bg-nexora-card/50 py-8 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-2">
+                <span class="text-lg font-bold tracking-tight text-white">NEXORA</span>
+                <span class="text-xs text-gray-500">© 2026 All Rights Reserved.</span>
+            </div>
+            <p class="text-xs text-gray-500">Stream your favorite cinema in high definition.</p>
+        </div>
+    </footer>
+
+    <!-- Download Fallback / Link Copy Modal (For Sandboxed Previews) -->
+    <div id="downloadModal" class="fixed inset-0 z-50 hidden bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-nexora-card border border-white/15 rounded-2xl max-w-md w-full p-5 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-full bg-nexora-accent/20 text-nexora-accent flex items-center justify-center">
+                        <i class="fa-solid fa-download"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-white text-base" id="dlModalTitle">Download Movie</h3>
+                        <p class="text-xs text-gray-400">Direct Google Drive Server</p>
+                    </div>
+                </div>
+                <button onclick="closeDownloadModal()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-gray-300 flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <p class="text-xs text-gray-300 leading-relaxed">
+                පහත බට්න් එක ක්ලික් කර ඩවුන්ලෝඩ් කරගන්න. (Preview තිරය තුළ බ්ලොක් වන්නේ නම් ලින්ක් එක Copy කර Browser එකේ Open කරන්න).
+            </p>
+
+            <div class="flex items-center gap-2 bg-black/50 border border-white/10 rounded-xl p-2">
+                <input id="dlLinkInput" type="text" readonly class="bg-transparent text-xs text-gray-300 w-full outline-none px-1">
+                <button onclick="copyDownloadLink()" id="copyBtn" class="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-xs font-semibold text-white shrink-0 transition-colors">
+                    Copy
+                </button>
+            </div>
+
+            <div class="flex gap-2.5 pt-1">
+                <a id="dlDirectAnchor" href="#" target="_blank" rel="noopener noreferrer" class="flex-1 py-2.5 px-4 rounded-xl bg-nexora-accent hover:bg-nexora-accentHover text-white text-xs font-bold text-center transition-colors">
+                    <i class="fa-solid fa-cloud-arrow-down mr-1.5"></i> Start Download
+                </a>
+                <button onclick="closeDownloadModal()" class="py-2.5 px-4 rounded-xl bg-white/10 hover:bg-white/15 text-gray-200 text-xs font-semibold">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Logic -->
+    <script>
+        // Movie Database
+        // Note: For Facebook links, pass a public Facebook video URL in `videoUrl` (e.g., https://www.facebook.com/.../videos/... or watch?v=...)
+        const movies = [
+            {
+                title: "players",
+                year: 2012,
+                rating: 6.5,
+                genre: "Action",
+                img: "https://drive.google.com/file/d/1zXSTOglXI1KSq6uwt_N4y__ljN7SzIDg/view?usp=drivesdk",
+                videoUrl: "https://drive.google.com/file/d/1B9FFCCtpWEHekmtdGOUvBNs3pG6nT7Ux/view?usp=drivesdk"
+            },
+            {
+                title: "The Silence of the Lambs",
+                year: 1991,
+                rating: 8.6,
+                genre: "Horror/Crime",
+                duration: "1h 58m",
+                img: "https://drive.google.com/file/d/1Kjq0EAP-fjViaR2uy1YxKSsxhOZLjC1M/view?usp=drivesdk",
+                videoUrl: "https://drive.google.com/file/d/1PvRTYKRGgheTdayw5yPFwPVqqO_oRk5L/view?usp=drivesdk"
+            },
+            {
+                title: "The Descent",
+                year: 2005,
+                rating: 7.2,
+                genre: "Horror/Adventure",
+                duration: "1h 39m",
+                img: "https://drive.google.com/file/d/1uI2Eq5hqrsdV1wESSKw5RFzfjIq-BDlb/view?usp=drivesdk",
+                videoUrl: "https://drive.google.com/file/d/1spXrJEPH89CoGGJOvg13mGfO1gNYoby0/view?usp=drivesdk"
+            }
+        ];
+
+        function isFacebookUrl(url) {
+            return typeof url === 'string' && /facebook\.com|fb\.watch/i.test(url);
+        }
+
+        // Convert Google Drive or Facebook links into direct image, embed video, and download URLs
+        function parseGoogleDriveMedia(url, type) {
+            if (!url) return '';
+
+            if (isFacebookUrl(url)) {
+                if (type === 'video') {
+                    const encoded = encodeURIComponent(url.trim());
+                    return `https://www.facebook.com/plugins/video.php?href=${encoded}&show_text=false&autoplay=true`;
+                }
+                return url.trim();
+            }
+
+            const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/);
+            if (match && match[1]) {
+                const fileId = match[1];
+                if (type === 'image') {
+                    return `https://drive.google.com/thumbnail?id=${fileId}&sz=w1000`;
+                } else if (type === 'video') {
+                    return `https://drive.google.com/file/d/${fileId}/preview`;
+                } else if (type === 'download') {
+                    return `https://drive.usercontent.google.com/download?id=${fileId}&export=download&confirm=t`;
+                }
+            }
+            return url;
+        }
+
+        // Handle Download Action reliably across browsers and sandboxed previews
+        function triggerDownload(movieObj) {
+            const targetMovie = movieObj || currentMovie || movies[0];
+            if (!targetMovie) return;
+
+            const downloadUrl = isFacebookUrl(targetMovie.videoUrl)
+                ? targetMovie.videoUrl
+                : parseGoogleDriveMedia(targetMovie.videoUrl, 'download');
+            
+            // Attempt to open in new tab/window
+            window.open(downloadUrl, '_blank', 'noopener,noreferrer');
+            
+            // Always show clean download modal with direct link & copy option in case preview blocks popups
+            document.getElementById('dlModalTitle').textContent = `Download: ${targetMovie.title.replace(/\b\w/g, l => l.toUpperCase())}`;
+            document.getElementById('dlLinkInput').value = downloadUrl;
+            document.getElementById('dlDirectAnchor').href = downloadUrl;
+            document.getElementById('copyBtn').textContent = 'Copy';
+            document.getElementById('downloadModal').classList.remove('hidden');
+        }
+
+        function closeDownloadModal() {
+            document.getElementById('downloadModal').classList.add('hidden');
+        }
+
+        function copyDownloadLink() {
+            const input = document.getElementById('dlLinkInput');
+            input.select();
+            input.setSelectionRange(0, 99999);
+            try {
+                document.execCommand('copy');
+                document.getElementById('copyBtn').textContent = 'Copied!';
+            } catch (err) {
+                console.error('Copy failed', err);
+            }
+        }
+
+        // Initialize UI
+        function initApp() {
+            if (movies.length > 0) {
+                const featured = movies[0];
+                const posterUrl = parseGoogleDriveMedia(featured.img, 'image');
+                
+                document.getElementById('heroBackdrop').src = posterUrl;
+                document.getElementById('heroTitle').textContent = featured.title;
+                document.getElementById('heroYear').textContent = featured.year;
+                document.getElementById('heroRating').textContent = featured.rating;
+                document.getElementById('heroGenre').textContent = featured.genre;
+                
+                const heroDuration = document.getElementById('heroDuration');
+                if (featured.duration) {
+                    heroDuration.textContent = `• ${featured.duration}`;
+                    heroDuration.classList.remove('hidden');
+                }
+
+                document.getElementById('heroDesc').textContent = `Watch ${featured.title} (${featured.year}) • ${featured.genre} • Rated ${featured.rating}/10 on Nexora.`;
+                document.getElementById('heroPlayBtn').onclick = () => openPlayer(featured);
+                document.getElementById('heroDownloadBtn').onclick = () => triggerDownload(featured);
+            }
+            renderMovies(movies);
+        }
+
+        // Render Movie Cards
+        function renderMovies(list) {
+            const grid = document.getElementById('moviesGrid');
+            const noResults = document.getElementById('noResults');
+            const movieCount = document.getElementById('movieCount');
+
+            grid.innerHTML = '';
+            movieCount.textContent = `${list.length} ${list.length === 1 ? 'Movie' : 'Movies'}`;
+
+            if (list.length === 0) {
+                noResults.classList.remove('hidden');
+                return;
+            } else {
+                noResults.classList.add('hidden');
+            }
+
+            list.forEach((movie) => {
+                const imageUrl = parseGoogleDriveMedia(movie.img, 'image');
+                
+                const card = document.createElement('div');
+                card.className = "group relative bg-nexora-card rounded-xl sm:rounded-2xl overflow-hidden border border-white/10 hover:border-nexora-accent/50 transition-all duration-300 shadow-lg hover:shadow-nexora-accent/10 flex flex-col cursor-pointer";
+                card.onclick = () => openPlayer(movie);
+
+                card.innerHTML = `
+                    <!-- Poster Wrapper -->
+                    <div class="relative aspect-[2/3] w-full overflow-hidden bg-gray-900">
+                        <img src="${imageUrl}" alt="${movie.title}" 
+                            onerror="this.src='https://placehold.co/600x900/141419/ffffff?text=${encodeURIComponent(movie.title)}'"
+                            class="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500">
+                        
+                        <!-- Rating Badge -->
+                        <div class="absolute top-1.5 right-1.5 sm:top-3 sm:right-3 px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-md sm:rounded-lg bg-black/80 backdrop-blur-md border border-white/10 flex items-center gap-1 text-[10px] sm:text-xs font-bold text-yellow-400">
+                            <i class="fa-solid fa-star text-[8px] sm:text-[10px]"></i>
+                            <span>${movie.rating}</span>
+                        </div>
+
+                        <!-- Play Overlay -->
+                        <div class="absolute inset-0 bg-black/30 opacity-85 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                            <div class="w-9 h-9 sm:w-14 sm:h-14 rounded-full bg-nexora-accent text-white flex items-center justify-center shadow-xl shadow-nexora-accent/40 transform scale-100 sm:scale-90 sm:group-hover:scale-100 transition-transform duration-300">
+                                <i class="fa-solid fa-play text-xs sm:text-lg ml-0.5"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card Info -->
+                    <div class="p-2 sm:p-4 flex-grow flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-xs sm:text-base font-bold capitalize text-white group-hover:text-nexora-accent transition-colors line-clamp-1">
+                                ${movie.title}
+                            </h3>
+                            <div class="flex items-center justify-between text-[10px] sm:text-xs text-gray-400 mt-1">
+                                <span>${movie.year}</span>
+                                <span class="hidden sm:inline px-2 py-0.5 rounded bg-white/5 border border-white/10 text-gray-300 truncate max-w-[90px]">${movie.genre}</span>
+                            </div>
+                        </div>
+
+                        <!-- Card Action Buttons -->
+                        <div class="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-white/10 flex items-center gap-1 sm:gap-2">
+                            <button type="button" class="flex-1 py-1.5 px-1.5 sm:py-2 sm:px-3 rounded-md sm:rounded-lg bg-nexora-accent hover:bg-nexora-accentHover text-white text-[10px] sm:text-xs font-semibold flex items-center justify-center gap-1 transition-colors">
+                                <i class="fa-solid fa-play text-[9px] sm:text-[10px]"></i>
+                                <span>Watch</span>
+                            </button>
+                            <button type="button" class="card-dl-btn py-1.5 px-2 sm:py-2 sm:px-3 rounded-md sm:rounded-lg bg-white/10 hover:bg-white/20 text-white text-[10px] sm:text-xs font-semibold flex items-center justify-center gap-1 transition-colors" title="Download Movie">
+                                <i class="fa-solid fa-download text-[10px] sm:text-[11px]"></i>
+                                <span class="hidden sm:inline">Download</span>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                card.querySelector('.card-dl-btn').onclick = (e) => {
+                    e.stopPropagation();
+                    triggerDownload(movie);
+                };
+                grid.appendChild(card);
+            });
+        }
+
+        // Open Dedicated Movie Watch View (Cinesubz Style)
+        let currentMovie = null;
+
+        function adjustPlayerLayout() {
+            const watchSection = document.getElementById('watchSection');
+            if (watchSection.classList.contains('hidden')) return;
+
+            const wrapper = document.getElementById('playerWrapper');
+            const scaler = document.getElementById('iframeScaler');
+
+            const cw = wrapper.clientWidth;
+            const ch = wrapper.clientHeight;
+
+            // Keep Facebook embeds at full wrapper size so their responsive controls stay clean
+            if (currentMovie && isFacebookUrl(currentMovie.videoUrl)) {
+                scaler.style.width = '100%';
+                scaler.style.height = '100%';
+                scaler.style.transform = 'none';
+                return;
+            }
+
+            if (cw < 650 && !document.fullscreenElement && !document.webkitFullscreenElement) {
+                const virtualWidth = 800;
+                const scale = cw / virtualWidth;
+                const virtualHeight = ch / scale;
+
+                scaler.style.width = `${virtualWidth}px`;
+                scaler.style.height = `${virtualHeight}px`;
+                scaler.style.transform = `scale(${scale})`;
+            } else {
+                scaler.style.width = '100%';
+                scaler.style.height = '100%';
+                scaler.style.transform = 'none';
+            }
+        }
+
+        function openPlayer(movie) {
+            currentMovie = movie;
+            const watchSection = document.getElementById('watchSection');
+            const heroSection = document.getElementById('heroSection');
+            const navHomeBtn = document.getElementById('navHomeBtn');
+            const gridSectionTitle = document.getElementById('gridSectionTitle');
+            const frame = document.getElementById('videoFrame');
+
+            const embedUrl = parseGoogleDriveMedia(movie.videoUrl, 'video');
+            const serverLabel = isFacebookUrl(movie.videoUrl) ? 'Facebook Stream (HD)' : 'Nexora Player (HD)';
+            document.getElementById('serverBtn1Label').innerHTML = `<span class="text-white/75 font-normal mr-1.5">Server</span> <strong class="font-bold">${serverLabel}</strong>`;
+
+            const formattedTitle = movie.title.replace(/\b\w/g, l => l.toUpperCase());
+            document.getElementById('watchTitle').textContent = `${formattedTitle} (${movie.year}) Sinhala Subtitles | සිංහල උපසිරැසි සමඟ`;
+            
+            document.getElementById('watchRating').textContent = movie.rating;
+            document.getElementById('watchYear').textContent = movie.year;
+            document.getElementById('watchGenre').textContent = movie.genre;
+            document.getElementById('watchDuration').textContent = movie.duration || 'HD';
+
+            frame.src = embedUrl;
+
+            heroSection.classList.add('hidden');
+            watchSection.classList.remove('hidden');
+            navHomeBtn.classList.remove('hidden');
+            gridSectionTitle.textContent = 'More Movies';
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            requestAnimationFrame(adjustPlayerLayout);
+        }
+
+        function showHome() {
+            const watchSection = document.getElementById('watchSection');
+            const heroSection = document.getElementById('heroSection');
+            const navHomeBtn = document.getElementById('navHomeBtn');
+            const gridSectionTitle = document.getElementById('gridSectionTitle');
+            const frame = document.getElementById('videoFrame');
+
+            frame.src = '';
+            watchSection.classList.add('hidden');
+            heroSection.classList.remove('hidden');
+            navHomeBtn.classList.add('hidden');
+            gridSectionTitle.textContent = 'Available Movies';
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function toggleMovieInfo() {
+            const box = document.getElementById('watchDetailsBox');
+            box.classList.toggle('hidden');
+        }
+
+        function reloadStream() {
+            if (!currentMovie) return;
+            const frame = document.getElementById('videoFrame');
+            const embedUrl = parseGoogleDriveMedia(currentMovie.videoUrl, 'video');
+            frame.src = '';
+            setTimeout(() => {
+                frame.src = embedUrl;
+            }, 150);
+        }
+
+        function selectServer(serverNum) {
+            if (serverNum === 1) {
+                reloadStream();
+            }
+        }
+
+        window.addEventListener('resize', adjustPlayerLayout);
+        document.addEventListener('fullscreenchange', adjustPlayerLayout);
+        document.addEventListener('webkitfullscreenchange', adjustPlayerLayout);
+
+        // Toggle Native Fullscreen
+        async function toggleFullScreen() {
+            const wrapper = document.getElementById('playerWrapper');
+            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+                try {
+                    if (wrapper.requestFullscreen) {
+                        await wrapper.requestFullscreen();
+                    } else if (wrapper.webkitRequestFullscreen) {
+                        await wrapper.webkitRequestFullscreen();
+                    }
+                    if (screen.orientation && screen.orientation.lock) {
+                        await screen.orientation.lock('landscape').catch(() => {});
+                    }
+                } catch (err) {
+                    console.log("Fullscreen error:", err);
+                }
+            } else {
+                if (screen.orientation && screen.orientation.unlock) {
+                    try { screen.orientation.unlock(); } catch (e) {}
+                }
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                }
+            }
+        }
+
+        // Search Functionality
+        function handleSearch(e) {
+            const query = e.target.value.toLowerCase().trim();
+            const watchSection = document.getElementById('watchSection');
+            
+            // If user searches while inside watch page, switch back to home view smoothly
+            if (!watchSection.classList.contains('hidden') && query.length > 0) {
+                showHome();
+            }
+
+            const filtered = movies.filter(m => 
+                m.title.toLowerCase().includes(query) || 
+                m.genre.toLowerCase().includes(query) ||
+                m.year.toString().includes(query)
+            );
+            renderMovies(filtered);
+        }
+
+        document.getElementById('searchInput').addEventListener('input', handleSearch);
+
+        // Start App
+        window.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>
+```
